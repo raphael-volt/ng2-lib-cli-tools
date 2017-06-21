@@ -1,6 +1,6 @@
 {
   "name": "ng2-lib-cli-tools",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Add karma environment to an angular2 library",
   "main": "index.js",
   "bin": {
@@ -29,5 +29,13 @@
     "name": "raphael-volt",
     "email": "raphael.ketmie@gmail.com"
   },
+  "keywords": [
+    "angular2",
+    "library",
+    "karma",
+    "debug",
+    "cli",
+    "webpack"
+  ],
   "license": "MIT"
 }
