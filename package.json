@@ -1,0 +1,33 @@
+{
+  "name": "ng2-lib-cli-tools",
+  "version": "1.0.0",
+  "description": "Add karma environment to an angular2 library",
+  "main": "index.js",
+  "bin": {
+    "ng2t": "index.js"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "fs": "0.0.1-security",
+    "mkdirp": "^0.5.1",
+    "mustache": "^2.3.0",
+    "path": "^0.12.7",
+    "rxjs": "^5.4.1",
+    "util": "^0.10.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/raphael-volt/ng2-lib-cli-tools.git"
+  },
+  "author": {
+    "name": "raphael-volt",
+    "email": "raphael.ketmie@gmail.com"
+  },
+  "license": "MIT"
+}
