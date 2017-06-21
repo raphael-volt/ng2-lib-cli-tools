@@ -186,7 +186,7 @@ const packageJSON = "package.json"
 let libraryName = ""
 let currentDir
 
-let init = () => {
+let init = (vscode) => {
     currentDir = process.cwd()
     let filename = pathJoinLocal(packageJSON)
     if (!fs.existsSync(filename)) {
@@ -301,6 +301,18 @@ let init = () => {
         data
     )
 
+    if(vscode) {
+        filename = "launch.json"
+        let dir = pathJoinLocal(".vscode")
+        if(!fs.exists(dir))
+            fs.mkdirSync(dir)
+        copy(
+            pathJoin(__dirname, templates, filename),
+            pathJoin(dir, filename))
+        console.log("You have to install Debugger for Chrome extension if not.".info)
+    }
+
+
     filename = "tsconfig.json"
     let input = fs.readFileSync(pathJoin(__dirname, templates, filename), encoding)
     let json = JSON.parse(input.toString())
@@ -339,9 +351,8 @@ let init = () => {
     process.exit(0)
 }
 
-// generator-angular2-library-test/app-test-lib
 module.exports = {
-    karma: () => {
-        init()
+    karma: (options) => {
+        init(options.parent.vscode || false)
     }
 }

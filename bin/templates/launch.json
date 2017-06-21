@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [{
+        "name": "Launch Chrome",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:9876/debug.html",
+        "runtimeArgs": [
+           "--user-data-dir",
+           "--remote-debugging-port=9222"
+        ],
+        "sourceMaps": true,
+        "diagnosticLogging": true,
+        "webRoot": "${workspaceRoot}",
+        "userDataDir": "${workspaceRoot}/.vscode/chrome"
+    },
+    {
+        "name": "Attach to Chrome",
+        "type": "chrome",
+        "request": "attach",
+        "url": "http://localhost:9876/debug.html",
+        "port": 9222,
+        "sourceMaps": true,
+        "diagnosticLogging": true,
+        "webRoot": "${workspaceRoot}"
+    }]
+}
