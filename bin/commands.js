@@ -304,7 +304,7 @@ let init = (vscode) => {
     if(vscode) {
         filename = "launch.json"
         let dir = pathJoinLocal(".vscode")
-        if(!fs.exists(dir))
+        if(!fs.existsSync(dir))
             fs.mkdirSync(dir)
         copy(
             pathJoin(__dirname, templates, filename),
