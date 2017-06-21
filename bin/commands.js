@@ -304,13 +304,28 @@ let init = () => {
     filename = "tsconfig.json"
     let input = fs.readFileSync(pathJoin(__dirname, templates, filename), encoding)
     let json = JSON.parse(input.toString())
-    json.types = [
+    json.compilerOptions.types = [
         "jasmine",
         "node"
     ]
+    json.compilerOptions.sourceMap = true
+    json.compilerOptions.declaration = false
+    json.compilerOptions.moduleResolution = "node"
+    json.compilerOptions.emitDecoratorMetadata = true
+    json.compilerOptions.experimentalDecorators = true
+    json.compilerOptions.target = "es5"
+    json.compilerOptions.typeRoots = [
+        "node_modules/@types"
+    ]
+    json.compilerOptions.lib = [
+        "es2016",
+        "dom"
+    ]
+    sortJsonProperties(json, "compilerOptions")
+
     input = JSON.stringify(json, null, 4)
     fs.writeFileSync(pathJoinLocal(filename), input, encoding)
-    
+
     if (npmInstallFlag) {
         console.log(
             "Dependencies have changed, run ".warn + "rm -rf node_modules && npm install".debug.bold
