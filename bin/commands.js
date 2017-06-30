@@ -435,7 +435,6 @@ export class ${data.moduleClass} {
     checkJsonScript(data.libraryName)
 
     filename = "gulpfile.js"
-    console.log(data)
     conf.moduleId = data.libraryName
     createTemplate(
         pathJoin(__dirname, templates, filename),
