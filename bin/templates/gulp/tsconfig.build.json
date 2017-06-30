@@ -21,7 +21,7 @@
     "annotateForClosureCompiler": true,
     "strictMetadataEmit": true,
     "skipTemplateCodegen": true,
-    "flatModuleOutFile": "{{moduleFilename}}.js",
+    "flatModuleOutFile": "{{libraryName}}.js",
     "flatModuleId": "{{libraryName}}"
   },
   "files": [

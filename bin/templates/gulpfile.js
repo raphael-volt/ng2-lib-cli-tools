@@ -14,6 +14,7 @@ const tmpFolder = path.join(rootFolder, '.tmp');
 const buildFolder = path.join(rootFolder, 'build');
 const distFolder = path.join(rootFolder, 'dist');
 const tsconfig = "{{tsconfig}}"
+const moduleId = "{{moduleId}}"
 /**
  * 1. Delete /dist folder
  */
@@ -131,7 +132,8 @@ gulp.task('rollup:umd', function () {
       // The name to use for the module for UMD/IIFE bundles
       // (required for bundles with exports)
       // See https://github.com/rollup/rollup/wiki/JavaScript-API#modulename
-      moduleName: 'prestashop-api-core',
+      // moduleName: 'prestashop-api-core',
+      moduleName: moduleId,
 
       // See https://github.com/rollup/rollup/wiki/JavaScript-API#globals
       globals: {
@@ -139,7 +141,7 @@ gulp.task('rollup:umd', function () {
       }
 
     }))
-    .pipe(rename('prestashop-api-core.umd.js'))
+    .pipe(rename(moduleId + '.umd.js'))
     .pipe(gulp.dest(distFolder));
 });
 
