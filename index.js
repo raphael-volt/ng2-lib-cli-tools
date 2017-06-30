@@ -5,6 +5,7 @@ var commands = require('./bin/commands')
 commander
     .version('0.0.1')
     .option('-v, --vscode', 'Add Chrome launcher configuration')
+    .option('-m, --module <moduleName>', 'Module to bootstrap')
     .command('karma')
     .description('Add karma environment to an angular2 library.')
     .action(commands.karma);

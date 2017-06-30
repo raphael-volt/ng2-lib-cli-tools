@@ -6,6 +6,7 @@ const path = require('path');
 const rxjs = require("rxjs")
 const colors = require('colors');
 let npmInstallFlag = false
+let mainPackage = {}
 colors.setTheme({
     silly: 'rainbow',
     input: 'grey',
@@ -22,7 +23,7 @@ let pathJoin = (...args) => {
     return path.join.apply(null, args)
 }
 
-let pathJoinLocal = (...args) => {
+let libraryPathJoin = (...args) => {
     args.unshift(currentDir)
     return pathJoin.apply(null, args)
 }
@@ -49,14 +50,27 @@ let capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-let pkgDiff = (src) => {
-
-    let data = fs.readFileSync(src).toString()
+let pkgDiff = (src, m) => {
     let json = {}
-    try {
-        json = JSON.parse(data)
-    } catch (error) {
-        return 1
+    let saveJson = false
+    if (fs.existsSync(src)) {
+        let data = fs.readFileSync(src).toString()
+        try {
+            json = JSON.parse(data)
+        } catch (error) {
+            return 1
+        }
+    }
+    if (json.name === undefined) {
+        libraryName = path.basename(currentDir)
+        json.name = libraryName
+        saveJson = true
+    } else {
+        libraryName = json.name
+    }
+
+    if (!json.name) {
+        return 2
     }
 
     let pkg = {
@@ -64,6 +78,7 @@ let pkgDiff = (src) => {
             "@angular/cli": "1.1.1",
             "@angular/compiler": "^4.0.0",
             "@angular/compiler-cli": "^4.0.0",
+            "@angular/http": "^4.2.4",
             "@angular/platform-browser": "^4.0.0",
             "@angular/platform-browser-dynamic": "^4.0.0",
             "@angular/router": "^4.2.2",
@@ -72,6 +87,10 @@ let pkgDiff = (src) => {
             "@types/node": "~6.0.60",
             "codelyzer": "^2.0.1",
             "core-js": "^2.4.1",
+            "del": "^2.2.2",
+            "gulp": "^3.9.1",
+            "gulp-rename": "^1.2.2",
+            "gulp-rollup": "^2.11.0",
             "jasmine-core": "~2.5.2",
             "jasmine-spec-reporter": "~3.2.0",
             "karma": "~1.4.1",
@@ -82,7 +101,15 @@ let pkgDiff = (src) => {
             "karma-jasmine-html-reporter": "^0.2.2",
             "karma-typescript": "^3.0.4",
             "karma-typescript-angular2-transform": "^1.0.0",
+            "node-sass": "^4.5.2",
+            "node-sass-tilde-importer": "^1.0.0",
+            "node-watch": "^0.5.2",
+            "protractor": "~5.1.0",
+            "rollup": "^0.41.6",
+            "run-sequence": "^1.2.2",
             "rxjs": "^5.1.0",
+            "ts-node": "~2.0.0",
+            "tslint": "~4.5.0",
             "typescript": "~2.2.0",
             "webdriver-js-extender": "^1.0.0",
             "webpack": "^3.0.0",
@@ -97,11 +124,6 @@ let pkgDiff = (src) => {
             "@angular/core": "^4.0.0"
         }
     }
-    if (!json.name) {
-        return 2
-    }
-
-    libraryName = json.name
 
     let p
     let changes = 0
@@ -141,8 +163,14 @@ let pkgDiff = (src) => {
             delete (json.dependencies[p])
         }
     }
-    if (changes > 0) {
-        npmInstallFlag = true
+    npmInstallFlag = changes > 0
+    if (m !== false && json.name !== m) {
+        libraryName = m
+        json.name = m
+        saveJson = true
+    }
+    mainPackage = json
+    if (npmInstallFlag || saveJson) {
         sortJsonProperties(json, "dependencies")
         sortJsonProperties(json, "devDependencies")
         fs.writeFileSync(
@@ -186,30 +214,143 @@ const packageJSON = "package.json"
 let libraryName = ""
 let currentDir
 
-let init = (vscode) => {
+let searchModule = (filename) => {
+    const moduleRE = /@NgModule\s*\(\s*\{[^\}]*\}\s*\)\s*export\s+class\s+(\w+)/gm
+    let moduleClass = undefined
+    if (fs.existsSync(filename)) {
+        let content = fs.readFileSync(filename)
+        let match = moduleRE.exec(content)
+        if (match) {
+            moduleClass = match[1]
+        }
+    }
+    return moduleClass
+}
+
+let checkJsonScript = (moduleName) => {
+    let save = false
+    let scripts = {
+        "build": "gulp build",
+        "build:watch": "gulp",
+        "docs": "npm run docs:build",
+        "docs:build": "compodoc -p tsconfig.json -n prestashop-api-core -d docs --hideGenerator",
+        "docs:build": `compodoc -p tsconfig.json -n ${moduleName} -d docs --hideGenerator`,
+        "docs:serve": "npm run docs:build -- -s",
+        "docs:watch": "npm run docs:build -- -s -w",
+        "lint": "tslint --type-check --project tsconfig.json src/**/*.ts",
+        "test": "ng test"
+    }
+    if (!mainPackage.scripts) {
+        mainPackage.scripts = {}
+    }
+    for (let p in scripts) {
+        if (mainPackage.scripts[p] != scripts[p]) {
+            mainPackage.scripts[p] = scripts[p]
+            save = true
+        }
+    }
+    if (save) {
+        fs.writeFileSync(libraryPathJoin(packageJSON), JSON.stringify(mainPackage, null, 4))
+    }
+}
+
+let checkTsconfig = () => {
+    let data = {
+        tsconfig: undefined
+    }
+    let srcdir = libraryPathJoin("src")
+    let files = fs.readdirSync(srcdir)
+    for (let f of files) {
+        file = path.basename(f)
+        if (! /.json$/.test(file) || file == packageJSON)
+            continue
+        if (file.indexOf("tsconfig") !== -1) {
+            data.tsconfig = file
+            break
+        }
+    }
+    return data
+}
+let checkModule = () => {
+    let data = {
+        createModule: false,
+        libraryName: libraryName,
+        moduleClass: undefined,
+        moduleFilename: undefined
+    }
+    let srcdir = libraryPathJoin("src")
+
+
+    let files = [
+        pathJoin(srcdir, libraryName + ".module.ts"),
+        pathJoin(srcdir, libraryName + ".ts")
+    ]
+    for (file of files) {
+        if (fs.existsSync(file)) {
+            data.moduleClass = searchModule(file)
+            if (data.moduleClass !== undefined) {
+                data.moduleFilename = path.basename(file).slice(0, -3)
+                return data
+            }
+        }
+    }
+    file = "index.ts"
+    data.moduleClass = searchModule(pathJoin(srcdir, file))
+    if (data.moduleClass !== undefined) {
+        data.moduleFilename = ""
+        return data
+    }
+    files = fs.readdirSync(srcdir)
+    for (let f of files) {
+        file = path.basename(f)
+        if (! /.ts$/.test(file) || /.spec.ts$/.test(file) || file == "index.ts")
+            continue
+        data.moduleClass = searchModule(pathJoin(srcdir, file))
+        if (data.moduleClass !== undefined) {
+            data.moduleFilename = file.slice(0, -3)
+            return data
+        }
+    }
+    data.moduleClass = getModuleClass(data.libraryName)
+    data.moduleFilename = data.libraryName + ".module"
+    data.createModule = true
+    return data
+}
+
+let firstCharToUpperCase = (str) => {
+    return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+let getModuleClass = (str) => {
+    str = str.replace("_", "-")
+    let data = str.split("-")
+    let i
+    const n = data.length
+    for (i = 0; i < n; i++) {
+        data[i] = firstCharToUpperCase(data[i])
+    }
+    data.push("Module")
+    return data.join("")
+}
+
+let init = (vscode, m) => {
     currentDir = process.cwd()
-    let filename = pathJoinLocal(packageJSON)
-    if (!fs.existsSync(filename)) {
-        console.log(colors.error("'" + packageJSON + "' not found! You must be inside an angular2 library project!"))
-        process.exit(1)
-        return
+    let dir = libraryPathJoin("src")
+    const srcdir = dir
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir)
     }
 
-    if (!fs.existsSync(pathJoinLocal("src"))) {
-        console.log(colors.error("src directory not found! You must be inside an angular2 library project!"))
-        process.exit(1)
-        return
-    }
-
-    let result = pkgDiff(filename)
+    let filename = packageJSON
+    let result = pkgDiff(libraryPathJoin(packageJSON), m)
 
     switch (result) {
         case 1:
-            console.log(`Unable to parse the ${filename} file.`.error)
+            console.log(`Unable to parse the ${packageJSON} file.`.error)
             break;
 
         case 2:
-            console.log(`Unable to find the library name from ${filename} file.`.error)
+            console.log(`Unable to find the library name from ${packageJSON} file.`.error)
             break;
 
         default:
@@ -219,92 +360,100 @@ let init = (vscode) => {
         process.exit(1)
         return
     }
+
     console.log("Installing " + "Karma".debug.bold + " for the library " + libraryName.info.bold + ".");
+    let data = checkModule()
+    if (data.createModule) {
+        filename = pathJoin(dir, data.moduleFilename + ".ts")
+        fs.writeFileSync(filename, `import { NgModule } from '@angular/core'
+import { CommonModule } from '@angular/common'
 
-    filename = pathJoinLocal("src", "index.ts")
+@NgModule({
+    imports: [CommonModule]
+})
+export class ${data.moduleClass} { 
 
-    let data = {
-        moduleClass: undefined,
-        moduleFilename: "index"
+}
+`)
     }
 
-    const moduleRE = /@NgModule\s*\(\s*\{[^\}]*\}\s*\)\s*export\s+class\s+(\w+)/gm
-    if (fs.existsSync(filename)) {
-        let content = fs.readFileSync(filename)
-        let match = moduleRE.exec(content)
-
-        if (match) {
-            data.moduleClass = match[1]
-        }
-        else {
-            data.moduleFilename = libraryName + ".module"
-            filename = pathJoinLocal("src", data.moduleFilename + ".ts")
-            if (fs.existsSync(filename)) {
-                content = fs.readFileSync(filename)
-                match = moduleRE.exec(content)
-                if (match) {
-                    data.moduleClass = match[1]
-                }
-            }
-        }
-    }
-    if (data.moduleClass == undefined) {
-        data.moduleFilename = ""
-        data.moduleClass = ""
-        console.log("Unable to find the module to bootstrap, you have to add your main module in the ./karma/main.ts file.".warn)
-    }
-    else {
-        console.log("Use module " + (data.moduleClass).debug.bold + " to bootstrap.")
-    }
-    filename = pathJoinLocal(karma)
+    filename = libraryPathJoin(karma)
     if (!fs.existsSync(filename))
-        fs.mkdirSync(pathJoinLocal(karma))
+        fs.mkdirSync(libraryPathJoin(karma))
 
     filename = "main.ts"
     createTemplate(
         pathJoin(__dirname, templates, karma, filename),
-        pathJoinLocal(karma, filename),
+        libraryPathJoin(karma, filename),
         data
     )
     filename = "polyfills.ts"
     copy(
         pathJoin(__dirname, templates, karma, filename),
-        pathJoinLocal(karma, filename)
+        libraryPathJoin(karma, filename)
     )
 
     filename = "test.ts"
     copy(
         pathJoin(__dirname, templates, karma, filename),
-        pathJoinLocal(karma, filename)
+        libraryPathJoin(karma, filename)
     )
 
     filename = "tsconfig.json"
     copy(
         pathJoin(__dirname, templates, karma, filename),
-        pathJoinLocal(karma, filename)
+        libraryPathJoin(karma, filename)
     )
     filename = "tsconfig.spec.json"
     copy(
         pathJoin(__dirname, templates, karma, filename),
-        pathJoinLocal(karma, filename)
+        libraryPathJoin(karma, filename)
     )
     filename = "karma.conf.js"
     copy(
         pathJoin(__dirname, templates, filename),
-        pathJoinLocal(filename)
+        libraryPathJoin(filename)
     )
     filename = ".angular-cli.json"
-    data.libraryName = libraryName
     createTemplate(
         pathJoin(__dirname, templates, filename),
-        pathJoinLocal(filename),
+        libraryPathJoin(filename),
         data
     )
 
-    if(vscode) {
+    let conf = checkTsconfig()
+    if (conf.tsconfig == undefined) {
+        filename = "tsconfig.build.json"
+        conf.tsconfig = filename
+        createTemplate(
+            pathJoin(__dirname, templates, "gulp", filename),
+            pathJoin(srcdir, filename),
+            data
+        )
+    }
+
+    checkJsonScript(data.libraryName)
+
+    filename = "gulpfile.js"
+    createTemplate(
+        pathJoin(__dirname, templates, filename),
+        libraryPathJoin(filename),
+        conf
+    )
+    filename = "gulp"
+    dir = libraryPathJoin(filename)
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir)
+    }
+    filename = pathJoin(filename, "inline-resources.js")
+    copy(
+        pathJoin(__dirname, templates, filename),
+        libraryPathJoin(filename)
+    )
+    if (vscode) {
         filename = "launch.json"
-        let dir = pathJoinLocal(".vscode")
-        if(!fs.existsSync(dir))
+        dir = libraryPathJoin(".vscode")
+        if (!fs.existsSync(dir))
             fs.mkdirSync(dir)
         copy(
             pathJoin(__dirname, templates, filename),
@@ -336,7 +485,7 @@ let init = (vscode) => {
     sortJsonProperties(json, "compilerOptions")
 
     input = JSON.stringify(json, null, 4)
-    fs.writeFileSync(pathJoinLocal(filename), input, encoding)
+    fs.writeFileSync(libraryPathJoin(filename), input, encoding)
 
     if (npmInstallFlag) {
         console.log(
@@ -353,6 +502,6 @@ let init = (vscode) => {
 
 module.exports = {
     karma: (options) => {
-        init(options.parent.vscode || false)
+        init(options.parent.vscode || false, options.parent.module || false)
     }
 }
