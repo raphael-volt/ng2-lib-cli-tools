@@ -335,7 +335,6 @@ let getModuleClass = (str) => {
 
 let init = (vscode, m) => {
     currentDir = process.cwd()
-    console.log(currentDir)
     let dir = libraryPathJoin("src")
     const srcdir = dir
     if (!fs.existsSync(dir)) {
