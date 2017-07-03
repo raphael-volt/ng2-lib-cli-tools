@@ -1,41 +1,99 @@
 {
-  "name": "ng2-lib-cli-tools",
-  "version": "1.1.2",
-  "description": "Add karma environment to an angular2 library",
-  "main": "index.js",
-  "bin": {
-    "ng2t": "index.js"
-  },
-  "dependencies": {
-    "child_process": "^1.0.2",
-    "colors": "^1.1.2",
-    "commander": "^2.9.0",
-    "fs": "0.0.1-security",
-    "mkdirp": "^0.5.1",
-    "mustache": "^2.3.0",
-    "path": "^0.12.7",
-    "rxjs": "^5.4.1",
-    "util": "^0.10.3"
-  },
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/raphael-volt/ng2-lib-cli-tools.git"
-  },
-  "author": {
-    "name": "raphael-volt",
-    "email": "raphael.ketmie@gmail.com"
-  },
-  "keywords": [
-    "angular2",
-    "library",
-    "karma",
-    "debug",
-    "cli",
-    "webpack"
-  ],
-  "license": "MIT"
+    "name": "ng2-lib-cli-tools",
+    "version": "1.1.2",
+    "description": "Add karma environment to an angular2 library",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/raphael_volt/ng2-lib-cli-tools.git"
+    },
+    "license": "MIT",
+    "scripts": {
+        "clean": "rimraf dist",
+        "build": "npm run clean && tsc --pretty",
+        "test": "npm run build && mocha --compilers ts:ts-node/register --recursive test/**/*.spec.ts",
+        "watch:build": "nodemon --config nodemon.json --exec npm run build",
+        "watch:test": "nodemon --config nodemon.json --exec npm run test"
+    },
+    "author": {
+        "name": "raphael_volt",
+        "email": "raphael.ketmie@gmail.com"
+    },
+    "main": "dist/app.js",
+    "typings": "dist/app.d.ts",
+    "bin": {
+        "nglib": "bin/nglib"
+    },
+    "files": [
+        "bin",
+        "dist",
+        "templates"
+    ],
+    "devDependencies": {
+        "@angular/cli": "1.1.1",
+        "@angular/compiler": "^4.0.0",
+        "@angular/compiler-cli": "^4.0.0",
+        "@angular/http": "^4.2.4",
+        "@angular/platform-browser": "^4.0.0",
+        "@angular/platform-browser-dynamic": "^4.0.0",
+        "@angular/router": "^4.2.2",
+        "@compodoc/compodoc": "^1.0.0-beta.7",
+        "@types/chai": "^4.0.1",
+        "@types/commander": "^2.3.31",
+        "@types/jasmine": "2.5.38",
+        "@types/mocha": "^2.2.39",
+        "@types/mustache": "^0.8.29",
+        "@types/node": "~6.0.60",
+        "@types/sinon": "^2.3.0",
+        "chai": "^4.0.2",
+        "codelyzer": "^2.0.1",
+        "core-js": "^2.4.1",
+        "del": "^2.2.2",
+        "gulp": "^3.9.1",
+        "gulp-rename": "^1.2.2",
+        "gulp-rollup": "^2.11.0",
+        "jasmine-core": "~2.5.2",
+        "jasmine-spec-reporter": "~3.2.0",
+        "karma": "~1.4.1",
+        "karma-chrome-launcher": "~2.0.0",
+        "karma-cli": "~1.0.1",
+        "karma-coverage-istanbul-reporter": "^0.2.3",
+        "karma-jasmine": "~1.1.0",
+        "karma-jasmine-html-reporter": "^0.2.2",
+        "karma-typescript": "^3.0.4",
+        "karma-typescript-angular2-transform": "^1.0.0",
+        "mocha": "^3.4.2",
+        "node-sass": "^4.5.2",
+        "node-sass-tilde-importer": "^1.0.0",
+        "node-watch": "^0.5.2",
+        "nodemon": "^1.11.0",
+        "protractor": "~5.1.0",
+        "rimraf": "^2.6.1",
+        "rollup": "^0.41.6",
+        "run-sequence": "^1.2.2",
+        "rxjs": "^5.1.0",
+        "sinon": "^2.3.6",
+        "ts-node": "~2.0.0",
+        "tslint": "~4.5.0",
+        "typescript": "~2.2.0",
+        "webdriver-js-extender": "^1.0.0",
+        "webpack": "^3.0.0",
+        "webpack-dev-middleware": "^1.10.2",
+        "webpack-dev-server": "^2.4.5",
+        "webpack-merge": "^4.1.0",
+        "webpack-sources": "^1.0.1",
+        "zone.js": "^0.8.4"
+    },
+    "dependencies": {
+        "@angular/common": "^4.0.0",
+        "@angular/core": "^4.0.0",
+        "child_process": "^1.0.2",
+        "colors": "^1.1.2",
+        "commander": "^2.10.0",
+        "fs": "0.0.1-security",
+        "intercept-stdout": "^0.1.2",
+        "mustache": "^2.3.0",
+        "node": "0.0.0",
+        "path": "^0.12.7",
+        "readline": "^1.3.0"
+    }
 }
