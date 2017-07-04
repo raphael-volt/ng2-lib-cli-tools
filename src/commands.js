@@ -19,6 +19,15 @@ colors.setTheme({
     debug: 'blue',
     error: 'red'
 })
+
+let _exitCode = 0
+let exitProcess = false
+let exit = (code) => {
+    _exitCode = code
+    if (exitProcess)
+        process.exit(code)
+}
+
 let pathJoin = (...args) => {
     return path.join.apply(null, args)
 }
@@ -233,7 +242,6 @@ let checkJsonScript = (moduleName) => {
         "build": "gulp build",
         "build:watch": "gulp",
         "docs": "npm run docs:build",
-        "docs:build": "compodoc -p tsconfig.json -n prestashop-api-core -d docs --hideGenerator",
         "docs:build": `compodoc -p tsconfig.json -n ${moduleName} -d docs --hideGenerator`,
         "docs:serve": "npm run docs:build -- -s",
         "docs:watch": "npm run docs:build -- -s -w",
@@ -333,7 +341,9 @@ let getModuleClass = (str) => {
     return data.join("")
 }
 
-let init = (vscode, m) => {
+let init = (vscode, m, exProc) => {
+    console.log("commands.init", vscode, m, exitProcess)
+    exitProcess = exProc ? true : false
     currentDir = process.cwd()
     let dir = libraryPathJoin("src")
     const srcdir = dir
@@ -357,7 +367,7 @@ let init = (vscode, m) => {
             break;
     }
     if (result != 0) {
-        process.exit(1)
+        exit(1)
         return
     }
 
@@ -500,31 +510,13 @@ export class ${data.moduleClass} {
         "The Karma testing environment has been installed, run ".info + "ng test".debug.bold + " to run your tests.".info
     )
 
-    process.exit(0)
+    exit(0)
 }
 
-/**
- * Expose the root command.
-exports = module.exports = new Commands()
- */
-
-
-/**
- * Expose `Command`.
-exports.Commands = Commands
-
-function Commands() {
-
-}
-
-Commands.prototype.karma = function (oprions) {
-    init(options.parent.vscode || false, options.parent.module || false)
-}
- */
 module.exports = {
+    exitProcess: true,
     karma: (options) => {
-        console.log("karma init()")
-
-        init(options.parent.vscode || false, options.parent.module || false)
+        init(options.parent.vscode || false, options.parent.module || false, this.exitProcess)
     }
+
 }
