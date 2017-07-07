@@ -12,5 +12,5 @@
     "src/",
     "test/"
   ],
-  "ext": "ts json"
+  "ext": "ts json html css scss"
 }
