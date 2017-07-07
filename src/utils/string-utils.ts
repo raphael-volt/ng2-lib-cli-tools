@@ -6,10 +6,12 @@ export class StringUtils {
         })
     }
 
+    // kebab-case !!!
     static camelCaseLower(input: string) {
         return StringUtils.prepareCamelize(input, "-")
     }
 
+    // PascalCase !!!
     static camelCase(input: string) {
         return StringUtils.prepareCamelize(input)
         .replace(/[a-z]+/g, (match: string) => {
