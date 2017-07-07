@@ -29,7 +29,7 @@ describe('StringUtils', () => {
         .to.be.equals(StringUtils.latinize("My53'Module_4.5.1Tést()54 fôö_Bàr_Foo"))
     })
 
-    it("should replace with '-", () => {
+    it("should transform to camel-case-lower", () => {
         expect(
             StringUtils.camelCaseLower(
                 "My53 Module45Test 54 fooBarFoo"
