@@ -1,9 +1,10 @@
 import * as commander from 'commander'
 import { PackageManager, PackageJSON } from "./core/package-manager";
-const commands = require('./commands')
+import { LibraryManager, LibraryDescriptor } from "./core/library-manager";
 
 export class App {
 
+    private libraryManager: LibraryManager
     private commander: commander.CommanderStatic
     
     private cwd: string
@@ -16,6 +17,7 @@ export class App {
     
     constructor() {
         this.commander = commander
+        this.libraryManager = new LibraryManager()
     }
 
     public initialize(exitProcess: boolean = true) {
@@ -47,8 +49,11 @@ export class App {
     }
 
     private installKarma = (options) => {
-        commands.exitProcess = false
-        commands.karma(options)
+        const libMan: LibraryManager = this.libraryManager
+
+        libMan.checkCurrentDirectory()
+
+        this.exit(0)
     }
 
     private exit(code: number) {

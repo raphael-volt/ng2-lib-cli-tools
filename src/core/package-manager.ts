@@ -103,9 +103,8 @@ export class PackageManager {
     }
 
     get json(): PackageJSON {
-        return this.json
+        return this._json
     }
-
 
     /**
      * Check json scripts, return true if changed
