@@ -21,8 +21,8 @@
     "annotateForClosureCompiler": true,
     "strictMetadataEmit": true,
     "skipTemplateCodegen": true,
-    "flatModuleOutFile": "{{libraryName}}.js",
-    "flatModuleId": "{{libraryName}}"
+    "flatModuleOutFile": "{{packageJSON.name}}.js",
+    "flatModuleId": "{{packageJSON.name}}"
   },
   "files": [
     "./index.ts"
