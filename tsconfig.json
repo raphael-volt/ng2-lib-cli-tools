@@ -38,6 +38,8 @@
     "exclude": [
         "node_modules/**/*",
         "bin/**/*",
-		"templates/**/*"
+        "templates/**/*",
+		"src/**/*.spec.ts",
+		"test/**/*.spec.ts"
     ]
 }
