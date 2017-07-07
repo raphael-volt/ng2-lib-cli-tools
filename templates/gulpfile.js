@@ -13,8 +13,9 @@ const srcFolder = path.join(rootFolder, 'src');
 const tmpFolder = path.join(rootFolder, '.tmp');
 const buildFolder = path.join(rootFolder, 'build');
 const distFolder = path.join(rootFolder, 'dist');
-const tsconfig = "{{tsconfig}}"
-const moduleId = "{{moduleId}}"
+const tsconfigFilename = "tsconfig.build.json"
+const tsconfigPath = path.join(rootFolder, 'gulp', tsconfigFilename)
+const moduleName = "{{packageJSON.name}}"
 /**
  * 1. Delete /dist folder
  */
@@ -44,14 +45,17 @@ gulp.task('inline-resources', function () {
     .then(() => inlineResources(tmpFolder));
 });
 
-
+gulp.task('copy:tsconfig', function () {
+  return gulp.src([`${tsconfigPath}`])
+    .pipe(gulp.dest(tmpFolder));
+});
 /**
  * 4. Run the Angular compiler, ngc, on the /.tmp folder. This will output all
  *    compiled modules to the /build folder.
  */
 gulp.task('ngc', function () {
   return ngc({
-    project: `${tmpFolder}/${tsconfig}`
+    project: `${tmpFolder}/${tsconfigFilename}`
   })
     .then((exitCode) => {
       if (exitCode === 1) {
@@ -132,7 +136,7 @@ gulp.task('rollup:umd', function () {
       // The name to use for the module for UMD/IIFE bundles
       // (required for bundles with exports)
       // See https://github.com/rollup/rollup/wiki/JavaScript-API#modulename
-      moduleName: moduleId,
+      moduleName: moduleName,
 
       // See https://github.com/rollup/rollup/wiki/JavaScript-API#globals
       globals: {
@@ -140,7 +144,7 @@ gulp.task('rollup:umd', function () {
       }
 
     }))
-    .pipe(rename(moduleId + '.umd.js'))
+    .pipe(rename(moduleName + '.umd.js'))
     .pipe(gulp.dest(distFolder));
 });
 
@@ -188,6 +192,7 @@ gulp.task('compile', function () {
   runSequence(
     'clean:dist',
     'copy:source',
+    'copy:tsconfig',
     'inline-resources',
     'ngc',
     'rollup:fesm',
