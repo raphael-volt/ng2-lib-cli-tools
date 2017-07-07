@@ -5,3 +5,9 @@ tests
 dist
 
 package-lock.json
+
+# eclipse
+
+.project
+
+.settings/
