@@ -49,6 +49,17 @@ gulp.task('copy:tsconfig', function () {
   return gulp.src([`${tsconfigPath}`])
     .pipe(gulp.dest(tmpFolder));
 });
+
+gulp.task('copy:index', function (done) {
+  tsfs.generateTsIndex(tmpFolder).subscribe(function(success) {
+    if(success)
+      done()
+    else
+      done(new Error("Error copy:index"))
+  },
+  done)
+});
+
 /**
  * 4. Run the Angular compiler, ngc, on the /.tmp folder. This will output all
  *    compiled modules to the /build folder.
@@ -193,6 +204,7 @@ gulp.task('compile', function () {
     'clean:dist',
     'copy:source',
     'copy:tsconfig',
+    'copy:index',
     'inline-resources',
     'ngc',
     'rollup:fesm',
