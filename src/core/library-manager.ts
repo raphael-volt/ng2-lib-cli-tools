@@ -1,10 +1,8 @@
-
-import { Observer, Observable } from "rxjs"
-import { PackageJSON, PackageManager } from "./package-manager";
-import { FilesManager } from "./files-manager";
-import { StringUtils } from "../utils/string-utils";
-import { ScanDirUtils } from "../utils/scandir-utils";
-import { ModuleFileSearch } from "../utils/module-file-search";
+import {PackageJSON, PackageManager} from "./package-manager";
+import {FilesManager} from "./files-manager";
+import {TsLibStringUtils} from "ts-lib-string-utils";
+import {tsfs, FileStats} from 'tsfs';
+import {ModuleFileSearch} from "../utils/module-file-search";
 import * as path from "path"
 import * as fs from "fs"
 
@@ -25,53 +23,52 @@ export class LibraryManager {
     checkCurrentDirectory() {
         const cwd: string = process.cwd()
         this.rootDirectory = cwd
-        
+
         const pkg: PackageManager = this.packageManager
         let pkgExists: boolean = pkg.load(cwd)
-        
+
         const json: PackageJSON = pkg.json
         let createModule: boolean = false
-        const moduleName: string = StringUtils.camelCaseLower(path.basename(cwd))
+        const moduleName: string = TsLibStringUtils.kebab(path.basename(cwd))
         const moduleFileName: string = moduleName + ".module.ts"
-        
+
         this.descriptor = {
             path: this.rootDirectory,
             packageJSON: pkg.json
         }
-        
 
         if (!pkgExists || json.name == undefined) {
             createModule = true
         }
         else {
             let fileNames: string[] = [moduleFileName]
-            if(json.name && json.name != moduleName) {
+            if (json.name && json.name != moduleName) {
                 fileNames.push(json.name + ".module.ts")
             }
-            
-            if(!this.checkModule(path.join(cwd, "src"), fileNames)) {
+
+            if (!this.checkModule(path.join(cwd, "src"), fileNames)) {
                 createModule = true
             }
         }
-        if(createModule) {
+        if (createModule) {
             json.name = moduleName
-            this.descriptor.moduleClass = StringUtils.camelCase(moduleName) + "Module"
+            this.descriptor.moduleClass = TsLibStringUtils.pascal(moduleName) + "Module"
             this.descriptor.moduleFilename = moduleFileName.slice(0, -3)
         }
-        
+
         let code: number = this.filesManager.run(
             path.resolve(__dirname, "..", "..", "templates"),
             this.descriptor
         )
         console.log("this.filesManager.run", code)
-        if(createModule) {
+        if (createModule) {
             this.filesManager.createModule(this.descriptor)
         }
 
         let changes: [boolean, boolean] = [
             pkg.validateDependencies(),
             pkg.validateScripts()]
-        if(changes[0] || changes[1] || [ createModule])
+        if (changes[0] || changes[1] || [createModule])
             pkg.save(cwd)
     }
 
@@ -80,37 +77,37 @@ export class LibraryManager {
         const ts_re: RegExp = /.ts$/
         const module_re: RegExp = /.module.ts$/
 
-        ScanDirUtils.scanSync(dir,
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                let tsFiles: string[] = []
-                let f: string
-                for (f of files)
-                    if (ts_re.test(f))
-                        tsFiles.push(f)
-                tsFiles.sort(ModuleFileSearch.sortFiles)
-                let j: any
-                let mfn: string
-                let i: number
-                for(j in moduleFileName) {
-                    mfn = moduleFileName[j]
-                    i = tsFiles.indexOf(mfn)
-                    if(i != -1) {
-                        tsFiles.splice(i, 1)
-                        tsFiles.splice(j, 0, mfn)
-                    }
-                }
-                let moduleClass: string
-                for(f of tsFiles) {
-                    moduleClass = ModuleFileSearch.parseFile(path.join(dir, f))
-                    if(moduleClass) {
-                        this.descriptor.moduleClass = moduleClass
-                        this.descriptor.moduleFilename = f.slice(0, -3)
-                        moduleFound = true
-                        break
-                    }
-                }
-                return false
-            }, false)
+        let tsFiles: string[] = []
+        let files: FileStats[] = tsfs.readDir(dir)
+        let filename: string
+        for (let stat of files) {
+            if (stat.isDir)
+                continue
+            filename = stat.basename
+            if (ts_re.test(filename))
+                tsFiles.push(filename)
+        }
+        let j: any
+        let mfn: string
+        let i: number
+        for (j in moduleFileName) {
+            mfn = moduleFileName[j]
+            i = tsFiles.indexOf(mfn)
+            if (i != -1) {
+                tsFiles.splice(i, 1)
+                tsFiles.splice(j, 0, mfn)
+            }
+        }
+        let moduleClass: string
+        for (filename of tsFiles) {
+            moduleClass = ModuleFileSearch.parseFile(path.join(dir, filename))
+            if (moduleClass) {
+                this.descriptor.moduleClass = moduleClass
+                this.descriptor.moduleFilename = filename.slice(0, -3)
+                moduleFound = true
+                break
+            }
+        }
         return moduleFound
     }
 }

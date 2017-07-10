@@ -2,8 +2,10 @@ import * as chai from 'chai';
 import * as sinon from 'sinon';
 import * as mocha from 'mocha';
 import * as path from 'path';
+import * as fs from 'fs';
+import { tsfs, FileStats } from 'tsfs';
+
 const expect = chai.expect
-import { ScanDirUtils, ScanHandler } from "../src/utils/scandir-utils";
 
 describe('ScanDirUtils', () => {
 
@@ -17,108 +19,82 @@ describe('ScanDirUtils', () => {
         expect(RE.test("tmp.js")).to.be.false
         expect(RE.test("tmp.js.x")).to.be.false
     })
+
     it("should find sync app.ts", () => {
         let result: boolean = false
         result = false
-        ScanDirUtils.scanSync(path.resolve(__dirname, "..", "src"),
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                if (files.indexOf("app.ts") != -1) {
-                    result = true
-                    return false
-                }
-                return true
-            })
-
+        let files: FileStats[] = tsfs.readDir(path.resolve(__dirname, "..", "src"))
+        for (let stats of files)
+            if (stats.basename == "app.ts")
+                result = true
         expect(result).to.be.true
     })
-    it("should find sync recurse", () => {
+
+    it("should find sync recurse with", () => {
         const dir: string = path.resolve(__dirname, "..", "src")
         let result: boolean = false
-        ScanDirUtils.scanSync(dir,
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                if (files.indexOf("scandir-utils.ts") != -1) {
-                    result = true
-                    return false
-                }
+        result = tsfs.findRecurse(dir, (stats: FileStats) => {
+            if (stats.basename == "package-manager.ts")
                 return true
-            }, true)
+            return false
+        })
         expect(result).to.be.true
-        result = false
-        ScanDirUtils.scanSync(dir,
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                if (files.indexOf("app.ts") != -1) {
-                    result = true
-                    return false
-                }
+        result = tsfs.findRecurse(dir, (stats: FileStats) => {
+            if (stats.basename == "app.ts")
                 return true
-            }, true)
-
+            return false
+        })
         expect(result).to.be.true
-        result = false
-        ScanDirUtils.scanSync(dir,
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                if (files.indexOf("files-manager.ts") != -1) {
-                    result = true
-                    return false
-                }
+        result = tsfs.findRecurse(dir, (stats: FileStats) => {
+            if (stats.basename == "files-manager.ts")
                 return true
-            }, true)
+            return false
+        })
         expect(result).to.be.true
 
     })
-    
+
     it("should find async app.ts", (done) => {
         const dir: string = path.resolve(__dirname, "..", "src")
-
-        ScanDirUtils.scan(dir,
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                if (files.indexOf("app.ts") != -1) {
-                    return false
+        let complete: boolean = false
+        let sub = tsfs.findAsync(dir).subscribe(
+            (fileStat: FileStats) => {
+                if (fileStat.basename == "app.ts") {
+                    sub.unsubscribe()
+                    setTimeout(() => {
+                        console.log("complete", complete)
+                        if(complete)
+                            console.log("COMPLETE CALLED !!!")
+                        done()
+                    }, 200)
                 }
-                return true
             },
-            error => {
-                done(error)
-            },
+            done,
             () => {
-                done()
-            })
+                complete = true
+            }
+        )
+
     })
-
-    it("should find async recurse scandir-utils.ts", (done) => {
+    it("should find with findRecurseAsync app.ts", (done) => { 
+        let complete: boolean = false
         const dir: string = path.resolve(__dirname, "..", "src")
-
-        ScanDirUtils.scan(dir,
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                if (files.indexOf("scandir-utils.ts") != -1) {
-                    return false
+        let sub = tsfs.findRecurseAsync(dir).subscribe(
+            (fileStat: FileStats) => {
+                if (fileStat.basename == "app.ts") {
+                    sub.unsubscribe()
+                    setTimeout(() => {
+                        console.log("complete", complete)
+                        if(complete)
+                            console.log("COMPLETE CALLED ( RECURSE ) !!!")
+                        done()
+                    }, 200)
                 }
-                return true
             },
-            error => {
-                done(error)
-            },
+            done,
             () => {
-                done()
-            },
-            true)
-    })
-    it("should find async recurse files-manager.ts", (done) => {
-        const dir: string = path.resolve(__dirname, "..", "src")
-
-        ScanDirUtils.scan(dir,
-            (dir: string, name: string, files: string[], dirs: string[]): boolean => {
-                if (files.indexOf("files-manager.ts") != -1) {
-                    return false
-                }
-                return true
-            },
-            error => {
-                done(error)
-            },
-            () => {
-                done()
-            },
-            true)
+                complete = true
+            }
+        )
     })
 })

@@ -54,7 +54,9 @@
         "node": "0.0.0",
         "readline": "^1.3.0",
         "rxjs": "^5.4.1",
+        "ts-lib-string-utils": "^1.0.1",
         "ts-node": "^3.1.0",
+        "tsfs": "0.0.4",
         "typescript": "^2.4.1"
     }
 }
