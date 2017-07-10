@@ -23,8 +23,9 @@ export class LibraryManager {
     checkCurrentDirectory() {
         const cwd: string = process.cwd()
         this.rootDirectory = cwd
-
+        const tplDir: string = path.resolve(__dirname, "..", "..", "templates")
         const pkg: PackageManager = this.packageManager
+        pkg.config(path.join(tplDir, "tpl.package.json"))
         let pkgExists: boolean = pkg.load(cwd)
 
         const json: PackageJSON = pkg.json
@@ -55,12 +56,11 @@ export class LibraryManager {
             this.descriptor.moduleClass = TsLibStringUtils.pascal(moduleName) + "Module"
             this.descriptor.moduleFilename = moduleFileName.slice(0, -3)
         }
-
+        
         let code: number = this.filesManager.run(
-            path.resolve(__dirname, "..", "..", "templates"),
+            tplDir,
             this.descriptor
         )
-        console.log("this.filesManager.run", code)
         if (createModule) {
             this.filesManager.createModule(this.descriptor)
         }
