@@ -51,11 +51,41 @@ If your project is inside a sub directory of the workspace, you have to copy the
     }]
 }
 ``` 
+## Project structure
 
-## src/
+```txt
+my-lib
+├── .vscode
+│   └── launch.json
+├── dist
+├── gulp
+│   ├── inline-resources.js
+│   └── tsconfig.build.json
+├── karma
+│   ├── main.ts
+│   ├── polyfills.ts
+│   ├── test.ts
+│   ├── tsconfig.json
+│   └── tsconfig.spec.json
+├── src
+│   └── my-lib.module.ts
+├── test
+│   └── my-lib.spec.ts
+├── .angular-cli.json
+├── gulpfile.js
+├── karma.conf.js
+├── package-lock.json
+├── package.json
+└── tsconfig.json
+```
+
+### src/
+
+The library source files.
 
 No [index.ts]() file is required, they will be generated during the build.
 
-## test/
+### test/
 
-Test cases directory, not `*.spec.ts` files will be ignored.
+The test cases directory, not `*.spec.ts` files will be ignored.
+
