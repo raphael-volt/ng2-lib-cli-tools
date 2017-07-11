@@ -1,7 +1,7 @@
 import * as chai from 'chai';
 import * as sinon from 'sinon';
 import * as mocha from 'mocha';
-import {TsLibStringUtils} from 'ts-lib-string-utils';
+import { TsLibStringUtils } from 'ts-lib-string-utils';
 
 const tlsu = TsLibStringUtils
 const expect = (target: any, message?: string): Chai.Assertion => {
@@ -15,8 +15,22 @@ const replaceUpper = (input: string): string => {
     })
 }
 
-describe('StringUtils', () => {
+describe.skip('StringUtils', () => {
 
+    it("should return [yes|no]", () => {
+        const yesno: string[] = ["yes", "no", "y", "n"]
+
+        const isYes = (value: string): boolean => {
+            return yesno.indexOf(value) % 2 == 0
+        }
+        expect(isYes("yes")).to.be.true
+        expect(isYes("no")).to.be.false
+        expect(isYes("y")).to.be.true
+        expect(isYes("n")).to.be.false
+        expect(isYes("foo")).to.be.false
+        expect(isYes("")).to.be.false
+
+    })
     it("should latinize", () => {
         expect("ExAmPlE aeiouycdenrstzu")
             .to.be.equals(tlsu.latinize("ỆᶍǍᶆṔƚÉ áéíóúýčďěňřšťžů"))

@@ -72,6 +72,32 @@ export class LibraryManager {
             pkg.save(cwd)
     }
 
+    makeInstall(pkgSrc: PackageJSON, cwd: string) {
+        this.rootDirectory = cwd
+        const tplDir: string = path.resolve(__dirname, "..", "..", "templates")
+        const pkg: PackageManager = this.packageManager
+        pkg.config(path.join(tplDir, "tpl.package.json"), pkgSrc)
+        
+        this.descriptor = {
+            path: this.rootDirectory,
+            packageJSON: pkg.json
+        }
+        this.descriptor.moduleClass = TsLibStringUtils.pascal(pkgSrc.name) + "Module"
+        this.descriptor.moduleFilename = pkgSrc.name + ".module"
+
+        this.filesManager.run(
+            tplDir,
+            this.descriptor
+        )
+        this.filesManager.createModule(this.descriptor)
+        pkg.validateDependencies()
+        pkg.validateScripts()
+        pkg.validateMain()
+        pkg.validateTypings()
+        pkg.validateVersion()
+        pkg.save(cwd)
+    }
+
     private checkModule(dir: string, moduleFileName: string[]): boolean {
         let moduleFound: boolean = false
         const ts_re: RegExp = /.ts$/

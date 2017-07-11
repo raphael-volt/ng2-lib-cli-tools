@@ -28,16 +28,19 @@ const sortJsonProperties = (json: { [name: string]: any }, property: string) => 
 export class PackageManager {
 
     private _jsonTpl: string
-    config(filename: string) {
+    config(filename: string, pkgSrc?: PackageJSON) {
         this._jsonTpl = fs.readFileSync(filename, "utf-8").toString()
+        if(pkgSrc)
+            this._json = pkgSrc
     }
     private _json: PackageJSON
-    load(dir: string): boolean {
-
-        dir = path.join(dir, PACKAGE_JSON)
-        if (fs.existsSync(dir)) {
-            this._json = JSON.parse(fs.readFileSync(dir).toString())
-            return true
+    load(dir?: string): boolean {
+        if(dir) {
+            dir = path.join(dir, PACKAGE_JSON)
+            if (fs.existsSync(dir)) {
+                this._json = JSON.parse(fs.readFileSync(dir).toString())
+                return true
+            }
         }
         this._json = {}
         return false
@@ -54,6 +57,29 @@ export class PackageManager {
             mustache.render(this._jsonTpl, this._json)
         )
         return this._jsonSrc
+    }
+    
+    validateVersion(): boolean {
+        if(this._json.version == undefined) {
+            this._json.version = this.jsonSrc.version
+            return true
+        }
+        return false
+    }
+
+    validateMain(): boolean {
+        if(this._json.main !== this.jsonSrc.main) {
+            this._json.main = this.jsonSrc.main
+            return true
+        }
+        return false
+    }
+    validateTypings(): boolean {
+        if(this._json.typings !== this.jsonSrc.typings) {
+            this._json.typings = this.jsonSrc.typings
+            return true
+        }
+        return false
     }
     /**
      * Check json scripts, return true if changed

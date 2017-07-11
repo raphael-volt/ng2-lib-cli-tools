@@ -20,13 +20,4 @@ describe('App', () => {
         chai.expect(app).not.to.be.null
     })
 
-    it('should initialize app', () => {
-        process.chdir(path.join(path.dirname(__dirname), "tests", "test-lib"))
-        process.argv.length = 2
-        process.argv[2] = "karma"
-        process.argv[3] = "-v"
-        app.initialize(false)
-        chai.expect(app.exitCode).to.be.equals(0)
-    })
-
 })
