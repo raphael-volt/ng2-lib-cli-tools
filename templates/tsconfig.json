@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "experimentalDecorators": true,
     "moduleResolution": "node",
-    "rootDir": "./src",
+    "rootDir": ".",
     "lib": [
       "es2015",
       "dom"
@@ -11,6 +11,19 @@
     "skipLibCheck": true,
     "types": [
       "jasmine"
-    ]
-  }
+    ],
+    "typeRoots": [
+			"node_modules/@types",
+			"node_modules"
+		]
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ],
+  "exclude": [
+    "node_modules/**/*",
+    "src/**/*.spec.ts",
+    "test/**/*.spec.ts"
+  ]
 }

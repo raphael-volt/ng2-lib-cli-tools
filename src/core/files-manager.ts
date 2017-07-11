@@ -5,7 +5,7 @@ import * as mkdirp from 'mkdirp'
 import * as mustache from 'mustache'
 import * as fs from 'fs'
 import * as path from 'path'
-
+import { clr } from "../utils/colors-util";
 const encoding = { encoding: "utf-8" }
 const karma = "karma"
 const templates = "templates"
@@ -31,13 +31,18 @@ export class FilesManager {
         try {
             fs.writeFileSync(dst, fs.readFileSync(src, encoding), encoding)
         } catch (error) {
-        console.log("copy")
-        console.log("src", src)
-        console.log("dst", dst)
-        console.log(error)
+            console.log("copy")
+            console.log("src", src)
+            console.log("dst", dst)
+            console.log(error)
             return false
         }
+        this.logCreatedFile(dst)
         return true
+    }
+
+    private logCreatedFile(dst: string) {
+        console.log("\t" + clr.bold(clr.info("create")) + " " + clr.input(path.relative(this.libraryPath, dst)))
     }
 
     private saveTemplate(src: string, dst: string, data: any): boolean {
@@ -53,6 +58,7 @@ export class FilesManager {
             console.log(error)
             return false
         }
+        this.logCreatedFile(dst)
         return true
     }
 
@@ -67,14 +73,15 @@ export class FilesManager {
     }
 
     createModule(descriptor: LibraryDescriptor) {
-        let dir:string = "src"
-        const success = this.checkDir(this.libraryJoin(dir))
-        console.log("createModule", descriptor.moduleFilename, success)
+        let src: string = this.libraryJoin("src")
+        const success = this.checkDir(src)
+
         if (!success)
             return 1
-
+        src = path.join(src, descriptor.moduleFilename + ".ts")
+        this.logCreatedFile(src)
         fs.writeFileSync(
-            path.join(descriptor.path, "src", descriptor.moduleFilename + ".ts"),
+            src,
             mustache.render(
                 `import { NgModule } from '@angular/core'
 import { CommonModule } from '@angular/common'
@@ -148,7 +155,6 @@ export class {{moduleClass}} {
         if (!success)
             return 6
         for (filename of [
-            ".angular-cli.json",
             "tsconfig.json",
             "karma.conf.js"
         ]) {
@@ -159,6 +165,22 @@ export class {{moduleClass}} {
             if (!success)
                 return 7
         }
+
+        filename = ".angular-cli.json"
+        success = this.saveTemplate(
+            this.templatesJoin(filename),
+            this.libraryJoin(filename),
+            descriptor
+        )
+        dir = this.libraryJoin("test")
+        this.checkDir(dir)
+
+        filename = "module.spec.ts"
+        success = this.saveTemplate(
+            this.templatesJoin(filename),
+            path.join(dir, descriptor.packageJSON.name + ".spec.ts"),
+            descriptor
+        )
 
         dir = "src"
         success = this.checkDir(this.libraryJoin(dir))

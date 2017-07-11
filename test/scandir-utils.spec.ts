@@ -7,7 +7,7 @@ import { tsfs, FileStats } from 'tsfs';
 
 const expect = chai.expect
 
-describe('ScanDirUtils', () => {
+describe.skip('ScanDirUtils', () => {
 
 
     it("should be scannable", () => {
