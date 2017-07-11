@@ -20,7 +20,20 @@ export class LibraryManager {
     private descriptor: LibraryDescriptor
     private filesManager: FilesManager = new FilesManager()
 
-    checkCurrentDirectory() {
+    checkCurrentDirectory(): boolean { 
+        const cwd: string = process.cwd()
+        this.rootDirectory = cwd
+        const tplDir: string = path.resolve(__dirname, "..", "..", "templates")
+        const pkg: PackageManager = this.packageManager
+        pkg.config(path.join(tplDir, "tpl.package.json"))
+        return pkg.load(cwd)
+    }
+
+    createVsCodeLauncher() {
+        this.filesManager.createLauncher(path.resolve(__dirname, "..", "..", "templates"))
+    }
+
+    private _checkCurrentDirectory() {
         const cwd: string = process.cwd()
         this.rootDirectory = cwd
         const tplDir: string = path.resolve(__dirname, "..", "..", "templates")
