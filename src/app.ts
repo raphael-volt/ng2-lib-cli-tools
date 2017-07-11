@@ -28,16 +28,10 @@ export class App {
     public initialize(exitProcess: boolean = true) {
         this.cwd = process.cwd()
         this.exitProcess = exitProcess
-        commander
-            .version('0.0.1')
-            .option('-v, --vscode', 'Add Chrome launcher configuration')
-            .command('karma')
-            .description('Add karma environment to an angular2 library.')
-            .action(this.installKarma)
-
-        commander.command('package')
-            .description("Check package dependencies")
-            .action(this.checkPackage)
+        
+        commander.command('vscode')
+            .description("Add vscode chrome launcher")
+            .action(this.vscode)
 
         commander.command('new [directory]')
             .description("Create an angular2 library")
@@ -46,14 +40,12 @@ export class App {
         commander.parse(process.argv)
     }
 
-    private checkPackage = () => {
-        let pkg: PackageManager = new PackageManager()
-        pkg.load(this.cwd)
-        const changes: [boolean, boolean] =
-            [pkg.validateDependencies(), pkg.validateScripts()]
-        if (changes[0] || changes[1])
-            pkg.save(this.cwd)
-        this.exit(0)
+    private vscode = () => {
+        if(this.libraryManager.checkCurrentDirectory()) {
+            this.libraryManager.createVsCodeLauncher()
+            process.exit(0)
+        }
+        process.exit(1)
     }
 
     private createLibrary = (...args) => {
@@ -122,21 +114,5 @@ export class App {
             })
         })
 
-    }
-
-    private installKarma = (options) => {
-
-
-        const libMan: LibraryManager = this.libraryManager
-
-        libMan.checkCurrentDirectory()
-
-        this.exit(0)
-    }
-
-    private exit(code: number) {
-        this._exitCode = code
-        if (this.exitProcess)
-            process.exit(code)
     }
 }

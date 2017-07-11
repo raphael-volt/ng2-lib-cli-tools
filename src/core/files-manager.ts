@@ -69,7 +69,20 @@ export class FilesManager {
         } catch (error) {
             return false
         }
+        console.log("checkDir", filename)
         return true
+    }
+
+    createLauncher(templatesPath: string) {
+        this.libraryPath = process.cwd()
+        this.templatesPath = templatesPath 
+        let filename: string = "launch.json"
+        let dir: string = this.libraryJoin(".vscode")
+        this.checkDir(dir)
+        this.copy(
+            this.templatesJoin(filename),
+            path.join(dir, filename)
+        )
     }
 
     createModule(descriptor: LibraryDescriptor) {
