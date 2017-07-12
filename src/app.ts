@@ -2,33 +2,48 @@ import * as commander from 'commander'
 import { existsSync, mkdirSync } from 'fs'
 import * as path from 'path'
 import * as child_process from 'child_process'
+import * as del from 'del'
+import { Observable, Observer } from "rxjs";
 import { clr } from "./utils/colors-util";
 import { PackageManager, PackageJSON } from "./core/package-manager";
 import { LibraryManager, LibraryDescriptor } from "./core/library-manager";
 import { CliInterface } from "./core/cli-interface";
 import { BusyMessage } from "./utils/busy-message";
+
 export class App {
 
     private libraryManager: LibraryManager
     private commander: commander.CommanderStatic
     private busyMessage: BusyMessage = new BusyMessage()
     private cwd: string
-    private exitProcess: boolean
-
-    private _exitCode: number = 0
-    get exitCode(): number {
-        return this._exitCode
-    }
-
+    private explicitModule: string
+    private skipNpm: boolean = false
     constructor() {
         this.commander = commander
         this.libraryManager = new LibraryManager()
     }
 
-    public initialize(exitProcess: boolean = true) {
+    public initialize() {
+
         this.cwd = process.cwd()
-        this.exitProcess = exitProcess
-        
+        let v: string = this.libraryManager.getAppVersion()
+        if (v == undefined)
+            v = "0.0.0"
+        commander
+            .version(v)
+            .option(
+            "-m, --module [module]", "Path to main module",
+            (explicitModule: string, ...args) => this.explicitModule = explicitModule,
+            ""
+            )
+            .option(
+            "-s, --skipnpm", "Skip npm commands : install, build, test",
+            (skipNpm: string, ...args) => {
+                this.skipNpm = true
+            },
+            ""
+            )
+
         commander.command('vscode')
             .description("Add vscode chrome launcher")
             .action(this.vscode)
@@ -37,18 +52,134 @@ export class App {
             .description("Create an angular2 library")
             .action(this.createLibrary)
 
+        commander.command('install [directory]')
+            .description("Update or install an exixting project")
+            .action(this.install)
+
+        commander.command('i [directory]')
+            .action(this.install)
+
+
+
         commander.parse(process.argv)
     }
 
-    private vscode = () => {
-        if(this.libraryManager.checkCurrentDirectory()) {
+    private explicitPath: string
+    private parseArgs(args: any[]): undefined | string {
+        if (!args || !args.length)
+            return undefined
+        let cmd: any = args.pop()
+        if (args.length) {
+            let p: string = args[0]
+            if (path.isAbsolute(p))
+                this.explicitPath = p
+            else {
+                this.explicitPath = path.resolve(this.cwd, p)
+            }
+        }
+        return this.explicitPath
+    }
+
+    private removeNodeModules() {
+        return del(['node_modules/**'])
+    }
+
+    private runNpm(): Observable<boolean> {
+        return Observable.create((observer: Observer<boolean>) => {
+            this.busyMessage.start(clr.bold(clr.debug("> npm install")))
+            child_process.exec("npm install", (err: Error, stdout: string, stderr: string) => {
+                if (err) {
+                    this.busyMessage.close(clr.bold(clr.error(`[${err.name}]`)))
+                    console.log(clr.error(err.message))
+                    console.log(clr.prompt(err.stack))
+                    return observer.error(err)
+                }
+                this.busyMessage.close(clr.bold(clr.info(`✓`)))
+                console.log(clr.input(stdout))
+                this.busyMessage.start(clr.bold(clr.debug("> npm run build")))
+                child_process.exec("npm run build", (err: Error, stdout: string, stderr: string) => {
+                    if (err) {
+                        this.busyMessage.close(clr.bold(clr.error(`[${err.name}]`)))
+                        console.log(clr.error(err.message))
+                        console.log(clr.prompt(err.stack))
+                        return observer.error(err)
+                    }
+                    this.busyMessage.close(clr.bold(clr.info(`✓`)))
+                    console.log(clr.input(stdout))
+                    this.busyMessage.start(clr.bold(clr.debug("> npm run test")))
+                    child_process.exec("ng test --single-run=true", (err: Error, stdout: string, stderr: string) => {
+                        if (err) {
+                            this.busyMessage.close(clr.bold(clr.error(`[${err.name}]`)))
+                            console.log(clr.error(err.message))
+                            console.log(clr.prompt(err.stack))
+                            return observer.error(err)
+                        }
+                        this.busyMessage.close(clr.bold(clr.info(`✓`)))
+                        console.log(clr.input(stdout))
+                        observer.next(true)
+                        observer.complete()
+                    })
+                })
+            })
+        })
+    }
+
+    private install = (...args) => {
+        this.parseArgs(args)
+        let libDir: string = this.cwd
+        if (this.explicitPath != undefined) {
+            if (existsSync(this.explicitPath)) {
+                process.chdir(this.explicitPath)
+                libDir = this.explicitPath
+            }
+            else {
+                console.log(clr.error("[Error] " + "Directory does not exists"))
+                process.exit(1)
+            }
+        }
+        let pkg: PackageJSON = this.libraryManager.getPackageJSON(libDir)
+        if (!pkg) {
+            console.log(clr.error("[Error] " + "package.json not found"))
+            process.exit(1)
+        }
+        console.log(clr.bold(clr.debug("> Update files")))
+        let result = this.libraryManager.makeUpdate(pkg, libDir, this.explicitModule)
+        if (result != undefined) {
+            console.log(clr.error("[Error] " + result))
+            process.exit(1)
+        }
+        if (!this.skipNpm) {
+            process.chdir(libDir)
+            console.log()
+            this.busyMessage.start(clr.bold(clr.debug("> Deleting " + clr.bold("node_modules/"))))
+            this.removeNodeModules().then(files => {
+                this.busyMessage.close(clr.bold(clr.info(`✓`)))
+                console.log()
+                this.runNpm().subscribe(success => {
+                    process.exit(0)
+                },
+                error => process.exit(1))
+            })
+        }
+        else
+            process.exit(0)
+    }
+
+    private parse_vscode = () => {
+
+    }
+    vscode = () => {
+        if (this.libraryManager.checkCurrentDirectory()) {
             this.libraryManager.createVsCodeLauncher()
             process.exit(0)
         }
         process.exit(1)
     }
 
-    private createLibrary = (...args) => {
+    private parse_createLibrary = (...args) => {
+
+    }
+    createLibrary = (...args) => {
         let inputs: string[] = args.slice(0, args.length - 1)
         let createDir: boolean = false
         let parentExists: boolean = false
@@ -72,47 +203,44 @@ export class App {
         }
         let cli: CliInterface = new CliInterface()
         cli.create(f).subscribe(pkg => {
+            let printAndExit = () => {
+                const str: string = `Library pkg.name created`
+                cli.printRect(str, str => `Library ${clr.debug(pkg.name)} created`)
+                return process.exit(0)
+            }
             if (createDir)
                 mkdirSync(f)
             this.libraryManager.makeInstall(pkg, f)
-            this.busyMessage.start(clr.bold(clr.debug("> npm install")))
+            if (this.skipNpm) {
+                return printAndExit()
+            }
             process.chdir(f)
-            child_process.exec("npm install", (err: Error, stdout: string, stderr: string) => {
-                if (err) {
-                    this.busyMessage.close(clr.bold(clr.error(`[${err.name}]`)))
-                    console.log(clr.error(err.message))
-                    console.log(clr.prompt(err.stack))
-                    return process.exit(1)
+            let sub = this.runNpm().subscribe(
+                success => {
+                    printAndExit()
+                },
+                error => {
+                    sub.unsubscribe()
+                    process.exit(1)
+                },
+                () => {
+                    sub.unsubscribe()
+                    process.exit(0)
                 }
-                this.busyMessage.close(clr.bold(clr.info(`✓`)))
-                console.log(clr.input(stdout))
-                this.busyMessage.start(clr.bold(clr.debug("> npm run build")))
-                child_process.exec("npm run build", (err: Error, stdout: string, stderr: string) => {
-                    if (err) {
-                        this.busyMessage.close(clr.bold(clr.error(`[${err.name}]`)))
-                        console.log(clr.error(err.message))
-                        console.log(clr.prompt(err.stack))
-                        return process.exit(1)
-                    }
-                    this.busyMessage.close(clr.bold(clr.info(`✓`)))
-                    console.log(clr.input(stdout))
-                    this.busyMessage.start(clr.bold(clr.debug("> npm run test")))
-                    child_process.exec("ng test --single-run=true", (err: Error, stdout: string, stderr: string) => {
-                        if (err) {
-                            this.busyMessage.close(clr.bold(clr.error(`[${err.name}]`)))
-                            console.log(clr.error(err.message))
-                            console.log(clr.prompt(err.stack))
-                            return process.exit(1)
-                        }
-                        this.busyMessage.close(clr.bold(clr.info(`✓`)))
-                        console.log(clr.input(stdout))
-                        const str: string = `Library pkg.name created`
-                        cli.printRect(str, str => `Library ${clr.debug(pkg.name)} created`)
-                        return process.exit(0)
-                    })
-                })
-            })
+            )
         })
-
     }
 }
+
+        /*
+          .version('0.1.0')
+  .usage('[options] <file ...>')
+  .option('-i, --integer <n>', 'An integer argument', parseInt)
+  .option('-f, --float <n>', 'A float argument', parseFloat)
+  .option('-r, --range <a>..<b>', 'A range', range)
+  .option('-l, --list <items>', 'A list', list)
+  .option('-o, --optional [value]', 'An optional value')
+  .option('-c, --collect [value]', 'A repeatable value', collect, [])
+  .option('-v, --verbose', 'A value that can be increased', increaseVerbosity, 0)
+  .parse(process.argv);
+  */

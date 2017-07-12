@@ -27,6 +27,22 @@ const sortJsonProperties = (json: { [name: string]: any }, property: string) => 
 
 export class PackageManager {
 
+    private _changed: boolean = false
+    public changed(): boolean {
+        return this._changed
+    }
+
+    getPackageJSON(filename: string): PackageJSON | undefined {
+        if(fs.existsSync(filename)) {
+            try {
+                let json: PackageJSON = JSON.parse(fs.readFileSync(filename).toString())
+                return json
+            } catch (error) {
+                
+            }
+        }
+        return undefined
+    }
     private _jsonTpl: string
     config(filename: string, pkgSrc?: PackageJSON) {
         this._jsonTpl = fs.readFileSync(filename, "utf-8").toString()
@@ -62,6 +78,7 @@ export class PackageManager {
     validateVersion(): boolean {
         if(this._json.version == undefined) {
             this._json.version = this.jsonSrc.version
+            this._changed = true
             return true
         }
         return false
@@ -70,6 +87,7 @@ export class PackageManager {
     validateMain(): boolean {
         if(this._json.main !== this.jsonSrc.main) {
             this._json.main = this.jsonSrc.main
+            this._changed = true
             return true
         }
         return false
@@ -77,6 +95,7 @@ export class PackageManager {
     validateTypings(): boolean {
         if(this._json.typings !== this.jsonSrc.typings) {
             this._json.typings = this.jsonSrc.typings
+            this._changed = true
             return true
         }
         return false
@@ -100,6 +119,8 @@ export class PackageManager {
                 changes++
             }
         }
+        if(changes > 0)
+            this._changed = true
         return changes > 0
     }
 
@@ -151,6 +172,8 @@ export class PackageManager {
                 delete (json.dependencies[p])
             }
         }
+        if(changes > 0)
+            this._changed = true
         return changes > 0
     }
 
@@ -159,6 +182,7 @@ export class PackageManager {
         sortJsonProperties(this._json, "dependencies")
         sortJsonProperties(this._json, "devDependencies")
         fs.writeFileSync(path.join(dir, PACKAGE_JSON), JSON.stringify(this._json, undefined, 4))
+        this._changed = false
     }
 }
 

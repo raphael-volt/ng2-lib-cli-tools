@@ -1,8 +1,8 @@
-import {PackageJSON, PackageManager} from "./package-manager";
-import {FilesManager} from "./files-manager";
-import {TsLibStringUtils} from "ts-lib-string-utils";
-import {tsfs, FileStats} from 'tsfs';
-import {ModuleFileSearch} from "../utils/module-file-search";
+import { PackageJSON, PackageManager } from "./package-manager";
+import { FilesManager } from "./files-manager";
+import { TsLibStringUtils } from "ts-lib-string-utils";
+import { tsfs, FileStats } from 'tsfs';
+import { ModuleFileSearch } from "../utils/module-file-search";
 import * as path from "path"
 import * as fs from "fs"
 
@@ -16,11 +16,29 @@ export interface LibraryDescriptor {
 export class LibraryManager {
 
     private rootDirectory: string
+    private tplDirectory: string
     private packageManager: PackageManager = new PackageManager()
     private descriptor: LibraryDescriptor
     private filesManager: FilesManager = new FilesManager()
+    private depenciesChanged: boolean
+    getAppVersion() {
 
-    checkCurrentDirectory(): boolean { 
+        const filename: string = path.resolve(__dirname, "..", "..", "..", "package.json")
+        let pkg: PackageJSON = this.packageManager.getPackageJSON(filename)
+        if (pkg !== undefined)
+            return pkg.version
+        return undefined
+    }
+
+    getPackageJSON(dirname: string, basename: string = "package.json"): PackageJSON | undefined {
+        let p: string = path.join(dirname, basename)
+        if (fs.existsSync(p)) {
+            return this.packageManager.getPackageJSON(p)
+        }
+        return undefined
+    }
+
+    checkCurrentDirectory(): boolean {
         const cwd: string = process.cwd()
         this.rootDirectory = cwd
         const tplDir: string = path.resolve(__dirname, "..", "..", "templates")
@@ -69,7 +87,7 @@ export class LibraryManager {
             this.descriptor.moduleClass = TsLibStringUtils.pascal(moduleName) + "Module"
             this.descriptor.moduleFilename = moduleFileName.slice(0, -3)
         }
-        
+
         let code: number = this.filesManager.run(
             tplDir,
             this.descriptor
@@ -85,30 +103,73 @@ export class LibraryManager {
             pkg.save(cwd)
     }
 
-    makeInstall(pkgSrc: PackageJSON, cwd: string) {
-        this.rootDirectory = cwd
-        const tplDir: string = path.resolve(__dirname, "..", "..", "templates")
-        const pkg: PackageManager = this.packageManager
-        pkg.config(path.join(tplDir, "tpl.package.json"), pkgSrc)
+    makeUpdate(pkgSrc: PackageJSON, cwd: string, moduleSrc?: string): string | undefined {
+        this.initContext(pkgSrc, cwd)
+        if(! moduleSrc) {
+            moduleSrc = path.join(cwd, "src", pkgSrc.name + ".module.ts")
+            if(! fs.existsSync(moduleSrc)) {
+                moduleSrc = path.join(cwd, "src", "index.ts")
+                if(! fs.existsSync(moduleSrc))
+                    moduleSrc = undefined
+            }
+        }
+        else {
+            if (! path.isAbsolute(moduleSrc)) {
+                moduleSrc = path.join(cwd, moduleSrc)
+            }
+            if(! fs.existsSync(moduleSrc)) 
+                moduleSrc = undefined
+        }
+        if(! moduleSrc)
+            return "Module file not found : " + moduleSrc
+        const relSrc: string = path.relative(cwd, moduleSrc)
+        var moduleClass = ModuleFileSearch.parseFile(moduleSrc)
+        if (moduleClass) {
+            this.descriptor.moduleClass = moduleClass
+            this.descriptor.moduleFilename = relSrc.slice(0, -3)
+        }
+        else
+            return "No module found in file"
         
+        return this.filesManager.update(this.tplDirectory, this.descriptor)
+    }
+
+    makeInstall(pkgSrc: PackageJSON, cwd: string) {
+
+        this.initContext(pkgSrc, cwd)
+
+        this.descriptor.moduleClass = TsLibStringUtils.pascal(pkgSrc.name) + "Module"
+        this.descriptor.moduleFilename = "src/" + pkgSrc.name + ".module"
+
+        this.filesManager.run(
+            this.tplDirectory,
+            this.descriptor
+        )
+        this.filesManager.createModule(this.descriptor)
+        this.validatePackage()
+    }
+
+    private initContext(pkgSrc: PackageJSON, cwd: string) {
+        this.rootDirectory = cwd
+        this.tplDirectory = path.resolve(__dirname, "..", "..", "templates")
+        const pkg: PackageManager = this.packageManager
+        pkg.config(path.join(this.tplDirectory, "tpl.package.json"), pkgSrc)
+
         this.descriptor = {
             path: this.rootDirectory,
             packageJSON: pkg.json
         }
-        this.descriptor.moduleClass = TsLibStringUtils.pascal(pkgSrc.name) + "Module"
-        this.descriptor.moduleFilename = pkgSrc.name + ".module"
+    }
 
-        this.filesManager.run(
-            tplDir,
-            this.descriptor
-        )
-        this.filesManager.createModule(this.descriptor)
-        pkg.validateDependencies()
+    private validatePackage() {
+        const pkg: PackageManager = this.packageManager
+        this.depenciesChanged = pkg.validateDependencies()
         pkg.validateScripts()
         pkg.validateMain()
         pkg.validateTypings()
         pkg.validateVersion()
-        pkg.save(cwd)
+        if (pkg.changed)
+            pkg.save(this.rootDirectory)
     }
 
     private checkModule(dir: string, moduleFileName: string[]): boolean {

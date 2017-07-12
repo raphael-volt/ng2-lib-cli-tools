@@ -1,8 +1,8 @@
-import { TestBed, async } from '@angular/core/testing';
-
-import { {{moduleClass}} } from '../src/{{{moduleFilename}}}';
+import { TestBed, async } from '@angular/core/testing'
+import { {{moduleClass}} } from '../{{{moduleFilename}}}'
 
 describe('{{moduleClass}}', () => {
+    
     beforeEach(() => {
         TestBed.configureTestingModule({
             declarations: [],
