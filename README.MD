@@ -1,8 +1,4 @@
-# Command line tool to generate Angular2 library
-
-Karma's setup is automatized, and the library is testable as a standalone application. All files will be served to webpack, so you can add breakpoints and inspect the context using the Chrome DevTools or the vscode debugger.
-
-@angular/cli in version `1.1.1` is used to launch Karma.
+# Angular2 library command line tool 
 
 ## Install
 
@@ -10,13 +6,30 @@ Karma's setup is automatized, and the library is testable as a standalone applic
 npm install -g ng2-lib-cli-tools
 ```
 
-## Usage
-```bash
-# Create a library
-nglib new [directory]
-# Add vscode debugger launcher
-nglib vscode
+##  
+```txt
+  
+  Usage: nglib [options] [command]
+
+
+  Options:
+
+    -m, --module <module>  Path to main module with new and install
+    -s, --skipnpm          Skip npm commands ( install, build, test ) with new and install
+    
+
+  Commands:
+
+    vscode               Add vscode chrome launcher
+    new [directory]      Create an angular2 library with karma testing environment
+    install [directory]  Update or install karma testing environment in an exixting library
+
 ```
+
+Karma's setup is automatized, and the library is testable as a standalone application. All files will be served to webpack, so you can add breakpoints and inspect the context using the Chrome DevTools or the vscode debugger.
+
+@angular/cli in version `1.1.1` is used to launch Karma.
+
 ## Run tests
 
 You must `cd` at the root directory of the library, then type :

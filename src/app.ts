@@ -32,12 +32,12 @@ export class App {
         commander
             .version(v)
             .option(
-            "-m, --module [module]", "Path to main module",
+            "-m, --module <module>", "Path to main module with new and install",
             (explicitModule: string, ...args) => this.explicitModule = explicitModule,
             ""
             )
             .option(
-            "-s, --skipnpm", "Skip npm commands : install, build, test",
+            "-s, --skipnpm", "Skip npm commands ( install, build, test ) with new and install",
             (skipNpm: string, ...args) => {
                 this.skipNpm = true
             },
@@ -49,11 +49,11 @@ export class App {
             .action(this.vscode)
 
         commander.command('new [directory]')
-            .description("Create an angular2 library")
+            .description("Create an angular2 library with karma testing environment")
             .action(this.createLibrary)
 
         commander.command('install [directory]')
-            .description("Update or install an exixting project")
+            .description("Update or install karma testing environment in an exixting library")
             .action(this.install)
 
         commander.command('i [directory]')
