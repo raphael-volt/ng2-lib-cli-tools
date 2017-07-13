@@ -1,12 +1,15 @@
 # Angular2 library command line tool 
 
+Making a testable library as a stand-alone application.
+Live debugging of typescript ( webpack ).
+
 ## Install
 
 ```bash
 npm install -g ng2-lib-cli-tools
 ```
 
-##  
+## Usage
 ```txt
   
   Usage: nglib [options] [command]
@@ -26,44 +29,60 @@ npm install -g ng2-lib-cli-tools
 
 ```
 
-Karma's setup is automatized, and the library is testable as a standalone application. All files will be served to webpack, so you can add breakpoints and inspect the context using the Chrome DevTools or the vscode debugger.
+## npm scripts
 
-@angular/cli in version `1.1.1` is used to launch Karma.
-
-## Run tests
-
-You must `cd` at the root directory of the library, then type :
+Build the library :
 ```bash
-ng test
+npm run build
+# Build every time a file is modified
+npm run build:watch
 ```
-Click on the debug button, then in the new tab, open the Chrome DevTools, go to the sources tab.
-```txt
-top
-    -- webpack
-        --
-            -- library-path/src
-                *.ts|html|css|scss
-```   
 
-## vscode
+Run tests :
+```bash
+npm test
+```
 
-If your project is inside a sub directory of the workspace, you have to copy the generated configuration to root of the workspace, and define the webroot in the `launch.json` file :
-```json
-{
-    "version": "0.2.0",
-    "configurations": [{
-        "name": "Launch Chrome",
-        ...
-        "webRoot": "${workspaceRoot}/dir-to-library",
-        ...
-    },
+## Consuming the library in development
+
+`my-lib` is an Angular2 library
+
+`my-app` is an Angular2 application who use the library 
+
+* Add the library to npm libs
+    
+    `cd` to the library directory, then type :
+    ```bash
+    npm link
+    ```
+* Add the link to the library
+
+    Set up a path mapping in the application [/src/tsconfig.app.json]() file :
+
+    ```json
     {
-        "name": "Attach to Chrome",
-        ...
-        "webRoot": "${workspaceRoot}/dir-to-library"
-    }]
-}
-``` 
+        "compilerOptions": {
+            "paths": {
+                "@angular/*": [
+                    "../node_modules/@angular/*"
+                ]
+            }
+        }
+    }
+    ```
+
+    `cd` to the application directory, then type :
+
+    ```bash
+    npm link my-lib
+    ```
+Serve or test the application.
+`cd` to the library directory, then run the `build:watch` command :
+```bash
+npm run build:watch
+```
+Make change in a file in the library `/src` directory will be detected and restart the served application.
+
 ## Project structure
 
 ```txt
@@ -102,3 +121,21 @@ No [index.ts]() file is required, they will be generated during the build.
 
 The test cases directory, not `*.spec.ts` files will be ignored.
 
+## vscode
+
+If your project is inside a sub directory of the workspace, you have to copy the generated configuration to the root of the workspace, and define the webroot in the `launch.json` file :
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Chrome",
+            "webRoot": "${workspaceRoot}/dir-to-library",
+        },
+        {
+            "name": "Attach to Chrome",
+            "webRoot": "${workspaceRoot}/dir-to-library"
+        }
+    ]
+}
+``` 
