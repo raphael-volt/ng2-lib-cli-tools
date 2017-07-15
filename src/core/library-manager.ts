@@ -4,7 +4,7 @@ import { TsLibStringUtils } from "ts-lib-string-utils";
 import { tsfs, FileStats } from 'tsfs';
 import { ModuleFileSearch } from "../utils/module-file-search";
 import * as path from "path"
-import * as fs from "fs"
+import * as fs from "fs-extra"
 
 export interface LibraryDescriptor {
     path?: string,
@@ -168,6 +168,7 @@ export class LibraryManager {
         pkg.validateMain()
         pkg.validateTypings()
         pkg.validateVersion()
+        pkg.validateNgLibConfig()
         if (pkg.changed)
             pkg.save(this.rootDirectory)
     }
