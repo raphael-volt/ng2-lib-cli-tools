@@ -15,7 +15,7 @@ const replaceUpper = (input: string): string => {
     })
 }
 
-describe.skip('StringUtils', () => {
+describe('StringUtils', () => {
 
     it("should return [yes|no]", () => {
         const yesno: string[] = ["yes", "no", "y", "n"]

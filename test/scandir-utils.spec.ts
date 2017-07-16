@@ -2,12 +2,12 @@ import * as chai from 'chai';
 import * as sinon from 'sinon';
 import * as mocha from 'mocha';
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import { tsfs, FileStats } from 'tsfs';
 
 const expect = chai.expect
 
-describe.skip('ScanDirUtils', () => {
+describe('ScanDirUtils', () => {
 
 
     it("should be scannable", () => {
@@ -62,9 +62,7 @@ describe.skip('ScanDirUtils', () => {
                 if (fileStat.basename == "app.ts") {
                     sub.unsubscribe()
                     setTimeout(() => {
-                        console.log("complete", complete)
-                        if(complete)
-                            console.log("COMPLETE CALLED !!!")
+                        expect(complete).to.be.false
                         done()
                     }, 200)
                 }
@@ -84,9 +82,7 @@ describe.skip('ScanDirUtils', () => {
                 if (fileStat.basename == "app.ts") {
                     sub.unsubscribe()
                     setTimeout(() => {
-                        console.log("complete", complete)
-                        if(complete)
-                            console.log("COMPLETE CALLED ( RECURSE ) !!!")
+                        expect(complete).to.be.false
                         done()
                     }, 200)
                 }
