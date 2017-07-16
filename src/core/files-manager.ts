@@ -4,7 +4,7 @@ import { apply } from "../utils/object-utils";
 import * as program from 'commander'
 import * as mkdirp from 'mkdirp'
 import * as mustache from 'mustache'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import { clr } from "../utils/colors-util";
 const encoding = { encoding: "utf-8" }

@@ -1,4 +1,4 @@
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as mustache from 'mustache'
 export const PACKAGE_JSON: string = "package.json"
@@ -92,6 +92,16 @@ export class PackageManager {
         }
         return false
     }
+    
+    validateNgLibConfig(): boolean {
+        if(this._json.config !== this.jsonSrc.config) {
+            this._json.config = this.jsonSrc.config
+            this._changed = true
+            return true
+        }
+        return false
+    }
+
     validateTypings(): boolean {
         if(this._json.typings !== this.jsonSrc.typings) {
             this._json.typings = this.jsonSrc.typings
@@ -210,5 +220,10 @@ export interface PackageJSON {
     }
     dependencies?: {
         [name: string]: string
+    }
+    config?: {
+        nglib?: {
+            module: string
+        }
     }
 }

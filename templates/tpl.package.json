@@ -61,5 +61,10 @@
         "docs:watch": "npm run docs:build -- -s -w",
         "lint": "tslint --type-check --project tsconfig.json src/**/*.ts",
         "test": "ng test"
+    },
+    "config": {
+        "nglib": {
+            "module": "src/{{name}}.module.ts"
+        }
     }
 }
