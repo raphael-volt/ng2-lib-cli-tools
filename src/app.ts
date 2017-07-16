@@ -7,6 +7,8 @@ import { Observable, Observer } from "rxjs";
 import { clr } from "./utils/colors-util";
 import { PackageManager, PackageJSON } from "./core/package-manager";
 import { LibraryManager, LibraryDescriptor } from "./core/library-manager";
+import { BlueprintManager } from "./core/blueprint-manager";
+
 import { CliInterface } from "./core/cli-interface";
 import { BusyMessage } from "./utils/busy-message";
 
@@ -59,9 +61,35 @@ export class App {
         commander.command('i [directory]')
             .action(this.install)
 
-
+        commander.command('generate')
+            .arguments('<blueprint> [name]')
+            .description("Create blueprints ([cl]ass, [c]omponent, [d]irective, [e]num, [g]uard, [i]nterface, [m]odule, [p]ipe, [s]ervice)")
+            .action(this.generateBlueprint)
+        commander.command('g')
+            .arguments('<blueprint> [name]')
+            .action(this.generateBlueprint)
 
         commander.parse(process.argv)
+    }
+
+    // private generateBlueprint = (...args) => {
+    private generateBlueprint = (blueprint: string, name: string) => {
+        let errorHandler = (error: Error) => {
+            console.log(clr.error(`[${error.name}] ${error.message}`))
+            if(error.stack)
+                console.log(clr.prompt(error.stack))
+            process.exit(1)
+        }
+        const blueprintManager: BlueprintManager = new BlueprintManager()
+        const cwd: string = process.cwd()
+        blueprintManager.searchMainPackage(cwd).then((pkg: PackageJSON) => {
+            let bp = blueprintManager.getBlueprint(blueprint)
+            if(! bp) 
+                return errorHandler(new Error("Invalid blueprint:" + blueprint))
+            blueprintManager.generate(pkg, cwd, bp.name, name).then(success => {
+                process.exit(success ? 0:1)
+            }).catch(errorHandler)
+        }).catch(errorHandler)
     }
 
     private explicitPath: string
@@ -158,16 +186,13 @@ export class App {
                 this.runNpm().subscribe(success => {
                     process.exit(0)
                 },
-                error => process.exit(1))
+                    error => process.exit(1))
             })
         }
         else
             process.exit(0)
     }
 
-    private parse_vscode = () => {
-
-    }
     vscode = () => {
         if (this.libraryManager.checkCurrentDirectory()) {
             this.libraryManager.createVsCodeLauncher()
@@ -176,9 +201,6 @@ export class App {
         process.exit(1)
     }
 
-    private parse_createLibrary = (...args) => {
-
-    }
     createLibrary = (...args) => {
         let inputs: string[] = args.slice(0, args.length - 1)
         let createDir: boolean = false
@@ -231,16 +253,3 @@ export class App {
         })
     }
 }
-
-        /*
-          .version('0.1.0')
-  .usage('[options] <file ...>')
-  .option('-i, --integer <n>', 'An integer argument', parseInt)
-  .option('-f, --float <n>', 'A float argument', parseFloat)
-  .option('-r, --range <a>..<b>', 'A range', range)
-  .option('-l, --list <items>', 'A list', list)
-  .option('-o, --optional [value]', 'An optional value')
-  .option('-c, --collect [value]', 'A repeatable value', collect, [])
-  .option('-v, --verbose', 'A value that can be increased', increaseVerbosity, 0)
-  .parse(process.argv);
-  */
