@@ -1,15 +1,17 @@
-import { PACKAGE_JSON, PackageJSON } from "./package-manager";
-
-import { resolveModulePath } from "@angular/cli/utilities/resolve-module-file";
-import { TsLibStringUtils } from "ts-lib-string-utils";
-// import { Blueprint } from "@angular/cli/ember-cli/lib/models/blueprint";
-const Blueprint = require('../../node_modules/@angular/cli/ember-cli/lib/models/blueprint')
-
 import * as path from "path"
 import * as fs from "fs-extra"
 
-const ANGULAR_CLI_PATH: string = path.resolve(__dirname, "..", "..", "node_modules", "@angular", "cli")
+import { PACKAGE_JSON, PackageJSON } from "./package-manager";
+import { TsLibStringUtils } from "ts-lib-string-utils";
 
+let dir: string = path.resolve(__dirname, "..", "..")
+if(path.basename(dir) == "dist")
+    dir = path.dirname(dir)
+
+const ANGULAR_CLI_PATH: string = path.join(dir, "node_modules", "@angular", "cli")
+dir = path.join(ANGULAR_CLI_PATH, 'ember-cli', 'lib', 'models', 'blueprint')
+dir = path.relative(__dirname, dir)
+const Blueprint = require(dir)
 
 export class BlueprintManager {
 
@@ -35,6 +37,8 @@ export class BlueprintManager {
         this.blueprints = this.loadBlueprints()
     }
 
+    private packageDirname: string
+
     searchMainPackage(dir?: string): Promise<PackageJSON> {
         if (dir == undefined)
             dir = process.cwd()
@@ -42,15 +46,16 @@ export class BlueprintManager {
             let next = () => {
                 let p: string = path.join(dir, PACKAGE_JSON)
                 fs.pathExists(p).then(exists => {
-                    if (exists) {
+                    if (exists)
                         fs.readJSON(p).then((pkg: PackageJSON) => {
                             if (pkg.config && pkg.config.nglib && pkg.config.nglib.module) {
+                                this.packageDirname = dir
                                 return resolve(pkg)
-                            } else {
-                                reject(new Error("Not a nglib " + PACKAGE_JSON))
-                            }
+                            } else
+                                return reject(new Error("You have to be inside an nglib project in order to use the generate command."))
+                            
                         }).catch(reject)
-                    } else {
+                    else {
                         dir = path.dirname(dir)
                         next()
                     }
@@ -68,12 +73,12 @@ export class BlueprintManager {
      * @param blueprintPath: relative to root 
      */
     generate(pkg: PackageJSON, root: string, blueprintType: string, blueprintPath: string): Promise<boolean> {
-
+        this.expectedApp = undefined
         return new Promise((resolve, reject) => {
             const bp = this.getBlueprint(blueprintType)
-            if (!bp) {
+            if (!bp) 
                 return reject(new Error("No blueprint found"))
-            }
+            
             this.initBlueprint(bp, pkg, root, blueprintPath).then(options => {
                 try {
                     bp.install(options).then((success: boolean) => {
@@ -82,7 +87,7 @@ export class BlueprintManager {
                         for (const i in l) {
                             if (/.spec.ts/.test(l[i])) {
                                 const cdir: string = path.dirname(blueprintPath)
-                                const tdir: string = path.join(root, "test")
+                                const tdir: string = path.join(this.packageDirname, "test")
                                 let src: string = l[i].replace(/__name__/, options.dasherizedModuleName)
                                 let dst: string = src.replace(/__path__/, tdir)
                                 src = src.replace(/__path__/, cdir)
@@ -102,6 +107,13 @@ export class BlueprintManager {
                                 fs.writeFileSync(dst, src)
                             }
                         }
+                        if(fs.existsSync(this.expectedApp))
+                            fs.removeSync(this.expectedApp)
+                        else {
+                            this.expectedApp = path.join(path.dirname(path.dirname(this.expectedApp)), "app")
+                            if(fs.existsSync(this.expectedApp))
+                                fs.removeSync(this.expectedApp)
+                        }
                         resolve(success)
                     }).catch(error => {
                         return reject(error)
@@ -113,6 +125,8 @@ export class BlueprintManager {
         })
     }
 
+    private expectedApp: string
+
     /**
      * @param bp 
      * @param pkg 
@@ -120,8 +134,12 @@ export class BlueprintManager {
      * @param blueprintPath relative to root 
      */
     private initBlueprint(bp: any, pkg: PackageJSON, root: string, blueprintPath: string): Promise<any> {
-        // console.log("\tinitBlueprint", blueprintPath)
         return new Promise((resolve, reject) => {
+            if(! blueprintPath) {
+                blueprintPath = path.basename(root)
+                root = path.dirname(root)
+            }
+            this.expectedApp = path.join(root, "app")
             const id: string = TsLibStringUtils.kebab(path.basename(blueprintPath))
             const basename: string = id + "." + bp.name + ".ts"
             let dirName: string
@@ -139,12 +157,10 @@ export class BlueprintManager {
             //console.log("\tmoduleSearchDir", moduleSearchDir)
             //console.log("\tdirName", dirName)
             //console.log("\tblueprintPath", blueprintPath)
-            if (!fs.existsSync(dirName)) {
+            if (!fs.existsSync(dirName))
                 fs.mkdirpSync(dirName)
-            }
 
             this.searchNearestModule(moduleSearchDir, root).then(rootModulePath => {
-                //console.log("\trootModulePath", rootModulePath)
                 if (!rootModulePath)
                     return reject(new Error("Parent module not found"))
                 let project: any = {
@@ -194,7 +210,6 @@ export class BlueprintManager {
                 bp._fileMapTokens = function (options) {
                     this.dynamicPath.dir = generatePath
                     this.generatePath = this.dynamicPath.dir
-                    //console.log("\tfileMapTokens generatePath", this.generatePath)
                     return {
                         __name__: function (options) {
                             return id
@@ -222,10 +237,10 @@ export class BlueprintManager {
         return new Promise((resolve, reject) => {
             let parent = () => {
                 fs.readdir(dir).then((files: string[]) => {
-                    for (const f of files) {
+                    for (const f of files) 
                         if (/.module.ts$/.test(f))
                             return resolve(path.join(dir, f))
-                    }
+
                     if (path.relative(root, dir) == "")
                         return resolve(null)
                     dir = path.dirname(dir)
