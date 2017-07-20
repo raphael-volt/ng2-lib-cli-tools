@@ -59,6 +59,7 @@ export class App {
             .action(this.install)
 
         commander.command('i [directory]')
+            .description("Update or install karma testing environment in an exixting library")
             .action(this.install)
 
         commander.command('generate')
@@ -99,12 +100,15 @@ export class App {
         let cmd: any = args.pop()
         if (args.length) {
             let p: string = args[0]
+            if(! p)
+                p = ""
             if (path.isAbsolute(p))
                 this.explicitPath = p
             else {
                 this.explicitPath = path.resolve(this.cwd, p)
             }
         }
+        console.log("this.explicitPath", this.explicitPath)
         return this.explicitPath
     }
 
@@ -212,7 +216,6 @@ export class App {
                 let f: string = inputs[0].trim()
                 if (path.isAbsolute(f)) {
                     f = path.resolve(this.cwd, f)
-                    parentExists = existsSync(path.dirname(f))
                 }
                 parentExists = existsSync(path.dirname(f))
                 createDir = !existsSync(f)
@@ -226,7 +229,7 @@ export class App {
         let cli: CliInterface = new CliInterface()
         cli.create(f).subscribe(pkg => {
             let printAndExit = () => {
-                const str: string = `Library pkg.name created`
+                const str: string = `Library ${pkg.name} created`
                 cli.printRect(str, str => `Library ${clr.debug(pkg.name)} created`)
                 return process.exit(0)
             }

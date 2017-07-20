@@ -127,6 +127,8 @@ export class LibraryManager {
         if (moduleClass) {
             this.descriptor.moduleClass = moduleClass
             this.descriptor.moduleFilename = relSrc.slice(0, -3)
+            pkgSrc.config.nglib.module = relSrc
+            this.packageManager.save(cwd)
         }
         else
             return "No module found in file"
