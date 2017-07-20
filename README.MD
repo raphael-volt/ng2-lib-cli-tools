@@ -11,21 +11,26 @@ npm install -g ng2-lib-cli-tools
 
 ## Usage
 ```txt
-  
+
   Usage: nglib [options] [command]
 
 
   Options:
 
+    -V, --version          output the version number
     -m, --module <module>  Path to main module with new and install
     -s, --skipnpm          Skip npm commands ( install, build, test ) with new and install
-    
+    -h, --help             output usage information
+
 
   Commands:
 
-    vscode               Add vscode chrome launcher
-    new [directory]      Create an angular2 library with karma testing environment
-    install [directory]  Update or install karma testing environment in an exixting library
+    vscode                       Add vscode chrome launcher
+    new [directory]              Create an angular2 library with karma testing environment
+    install [directory]          Update or install karma testing environment in an exixting library
+    i [directory]
+    generate <blueprint> [name]  Create blueprints ([cl]ass, [c]omponent, [d]irective, [e]num, [g]uard, [i]nterface, [m]odule, [p]ipe, [s]ervice)
+    g <blueprint> [name]
 
 ```
 
