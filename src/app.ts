@@ -59,13 +59,13 @@ export class App {
             .action(this.install)
 
         commander.command('i [directory]')
-            .description("Update or install karma testing environment in an exixting library")
             .action(this.install)
 
         commander.command('generate')
             .arguments('<blueprint> [name]')
             .description("Create blueprints ([cl]ass, [c]omponent, [d]irective, [e]num, [g]uard, [i]nterface, [m]odule, [p]ipe, [s]ervice)")
             .action(this.generateBlueprint)
+        
         commander.command('g')
             .arguments('<blueprint> [name]')
             .action(this.generateBlueprint)
@@ -108,7 +108,6 @@ export class App {
                 this.explicitPath = path.resolve(this.cwd, p)
             }
         }
-        console.log("this.explicitPath", this.explicitPath)
         return this.explicitPath
     }
 
